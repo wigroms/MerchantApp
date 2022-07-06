@@ -16,6 +16,7 @@ import com.example.mockingmerchantapp.ModelClass.Transactions
 import com.example.mockingmerchantapp.databinding.TransactionHistoryFragmentBinding
 import java.text.DateFormat
 import java.text.SimpleDateFormat
+import java.time.DayOfWeek
 import java.util.*
 
 class HistoryFragment : Fragment() {
@@ -91,6 +92,7 @@ class HistoryFragment : Fragment() {
             val cals: Calendar = Calendar.getInstance()
             val currentDate: String = df.format(cals.getTime())
 
+            binding.textView11.text = currentDate
             binding.textView23.text = currentDate
             binding.textView24.text = String.format("%,d",viewModel.getTransactionTotalAmount())
             binding.textView25.text = it.data.count.toString() + " transaction"

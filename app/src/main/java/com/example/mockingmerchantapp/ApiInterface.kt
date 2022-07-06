@@ -1,10 +1,7 @@
 package com.example.mockingmerchantapp
 
 import android.util.Log
-import com.example.mockingmerchantapp.ModelClass.CscanB
-import com.example.mockingmerchantapp.ModelClass.CscanBRequest
-import com.example.mockingmerchantapp.ModelClass.TransactionInquiry
-import com.example.mockingmerchantapp.ModelClass.TransactionRequest
+import com.example.mockingmerchantapp.ModelClass.*
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Call
@@ -22,6 +19,9 @@ interface ApiInterface {
 
     @POST("merchant/v1/transactions")
     fun TransactionInquiry(@Body body:TransactionRequest): Call<TransactionInquiry>
+
+    @POST("merchant/v1/waitforpayment")
+    fun PaymentInquiry(@Body body:PaymentInquiryRequest): Call<PaymentInquiry>
 
 
     object ApiClient {

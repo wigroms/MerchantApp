@@ -1,7 +1,11 @@
 package com.example.mockingmerchantapp.ui.main
 
+import android.app.Dialog
+import android.content.Context
+import android.content.DialogInterface
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.os.Handler
 import android.util.Log
 import android.view.View
 import android.widget.Button
@@ -10,14 +14,12 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.mockingmerchantapp.MainRepository
 import com.example.mockingmerchantapp.ModelClass.*
 import com.example.mockingmerchantapp.R
 import com.example.mockingmerchantapp.databinding.MainFragmentBinding
-import com.example.mockingmerchantapp.databinding.TransactionHistoryFragmentBinding
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
@@ -144,7 +146,7 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
         response.enqueue(object : Callback<TransactionInquiry> {
             override fun onResponse(
                 call: Call<TransactionInquiry>,
-                response: Response<TransactionInquiry>
+                response: Response<TransactionInquiry>,
             ) {
                 transactionInquiry.postValue(response.body())
                 transactionslist.postValue(response.body()!!.data.transactions.sortedByDescending { it.when_ })
@@ -192,6 +194,28 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
 
     }
 
+    var res_payment = MutableLiveData<PaymentInquiry>()
+    var res_payment_data = MutableLiveData<Data>()
+
+    fun getStatusPayment(req:PaymentInquiryRequest){
+
+        val response = repository.getStatusPayment(req)
+        response.enqueue(object : Callback<PaymentInquiry> {
+            override fun onResponse(call: Call<PaymentInquiry>, response: Response<PaymentInquiry>) {
+
+                res_payment_data.value = response.body()?.data
+                Log.w("response.body()", "" + response.body().toString())
+                Log.w("res_payment_data", "" + res_payment_data.value)
+            }
+
+            override fun onFailure(call: Call<PaymentInquiry>, t: Throwable) {
+                Log.w("response.body()", "" + t.message)
+            }
+
+
+        })
+    }
+
     fun getQrCodeBitmap(paymentCode:String): Bitmap {
         val size = 256 //pixels
         val qrCodeContent = "$paymentCode"
@@ -205,6 +229,8 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
             }
         }
     }
+
+
 
     var Amount_Str = MutableLiveData<String>()
 
@@ -280,6 +306,29 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
 
     fun GetAmountValue(): Int? {
         return Integer.valueOf(Amount_Str.value)
+    }
+
+    fun ShowDialog(view: View,context: Context) {
+        val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        dialog.setCanceledOnTouchOutside(true)
+        dialog.setOnCancelListener { it.dismiss() }
+        dialog.setContentView(R.layout.success_fragment)
+        dialog.show()
+
+        // Hide after some seconds
+        // Hide after some seconds
+        val handler = Handler()
+        val runnable = Runnable {
+            if (dialog.isShowing()) {
+                dialog.dismiss()
+            }
+        }
+
+        dialog.setOnDismissListener(DialogInterface.OnDismissListener {
+            handler.removeCallbacks(runnable)
+        })
+
+        handler.postDelayed(runnable, 5000)
     }
 
 }

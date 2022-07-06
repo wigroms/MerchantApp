@@ -18,6 +18,11 @@
         <entry key="..\:/Users/wigom/AndroidStudioProjects/MockingMerchantApp/app/src/main/res/layout/transaction_history_fragment.xml" value="0.5076142131979695" />
         <entry key="..\:/Users/wigom/AndroidStudioProjects/MockingMerchantApp/app/src/main/res/layout/transaction_recycle_view.xml" value="0.6" />
         <entry key="..\:/Users/wigom/AndroidStudioProjects/MockingMerchantApp/app/src/main/res/layout/vxcvxcv.xml" value="0.10989583333333333" />
+        <entry key="..\:/Users/wigom/Documents/Android_Project/MerchantApp/app/src/main/res/layout/fail_fragment.xml" value="0.1" />
+        <entry key="..\:/Users/wigom/Documents/Android_Project/MerchantApp/app/src/main/res/layout/payment_medthod_fragment.xml" value="0.4" />
+        <entry key="..\:/Users/wigom/Documents/Android_Project/MerchantApp/app/src/main/res/layout/qr_fragment.xml" value="0.264" />
+        <entry key="..\:/Users/wigom/Documents/Android_Project/MerchantApp/app/src/main/res/layout/success_fragment.xml" value="0.1" />
+        <entry key="..\:/Users/wigom/Documents/Android_Project/MerchantApp/app/src/main/res/layout/transaction_history_fragment.xml" value="0.264" />
       </map>
     </option>
   </component>
