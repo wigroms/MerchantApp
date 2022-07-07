@@ -2,10 +2,12 @@ package com.example.mockingmerchantapp
 
 import android.util.Log
 import com.example.mockingmerchantapp.ModelClass.*
+import io.reactivex.rxjava3.core.Observable
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.Retrofit
+import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -21,7 +23,7 @@ interface ApiInterface {
     fun TransactionInquiry(@Body body:TransactionRequest): Call<TransactionInquiry>
 
     @POST("merchant/v1/waitforpayment")
-    fun PaymentInquiry(@Body body:PaymentInquiryRequest): Call<PaymentInquiry>
+    fun PaymentInquiry(@Body body:PaymentInquiryRequest): Observable<PaymentInquiry>
 
 
     object ApiClient {
@@ -51,8 +53,9 @@ interface ApiInterface {
                 .build()
 
             retrofit = Retrofit.Builder()
-                .baseUrl("https://91151b51c56a4caabcea204b8837fe59.apig.ap-southeast-2.huaweicloudapis.com/caribbean/")
                 .addConverterFactory(GsonConverterFactory.create())
+                .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
+                .baseUrl("https://91151b51c56a4caabcea204b8837fe59.apig.ap-southeast-2.huaweicloudapis.com/caribbean/")
                 .client(okHttpClient)
                 .build()
             Log.w("retrofit",""+retrofit.baseUrl().uri())

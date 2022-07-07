@@ -15,6 +15,7 @@ import android.widget.TextView
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import com.example.mockingmerchantapp.MainRepository
 import com.example.mockingmerchantapp.ModelClass.*
@@ -23,9 +24,14 @@ import com.example.mockingmerchantapp.databinding.MainFragmentBinding
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.schedulers.Schedulers
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.util.concurrent.TimeUnit
 
 
 class MainViewModel constructor(private val repository: MainRepository) : ViewModel() {
@@ -142,7 +148,9 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
 
     fun getTransactionHistory() {
 
-        val response = repository.getTransaction()
+        var tranRequest = TransactionRequest(date = "2022-06-10",payment_method = "kexwallet")
+        val response = repository.getTransaction(tranRequest)
+
         response.enqueue(object : Callback<TransactionInquiry> {
             override fun onResponse(
                 call: Call<TransactionInquiry>,
@@ -197,11 +205,27 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
     var res_payment = MutableLiveData<PaymentInquiry>()
     var res_payment_data = MutableLiveData<Data>()
 
-    fun getStatusPayment(req:PaymentInquiryRequest){
+    fun getStatusPayment(req: PaymentInquiryRequest){
 
-        val response = repository.getStatusPayment(req)
-        response.enqueue(object : Callback<PaymentInquiry> {
-            override fun onResponse(call: Call<PaymentInquiry>, response: Response<PaymentInquiry>) {
+        var response = repository.getStatusPayment(req)
+       response.subscribeOn(Schedulers.io())
+           .observeOn(AndroidSchedulers.mainThread())
+           //.repeat(10000)
+           .timeout(20,TimeUnit.SECONDS)
+           .takeUntil{it.data.status.equals("success")}//processing
+           .subscribe(getPaymentInquiryRX())
+
+         /*    var Intervaltime : Observable<Long> =  Observable.interval(5, TimeUnit.SECONDS)
+        Intervaltime.subscribe { it ->
+            System.out.println("Interval 5 = $it")
+
+        }*/
+
+        /*response.enqueue(object : Callback<PaymentInquiry> {
+            override fun onResponse(
+                call: Call<PaymentInquiry>,
+                response: Response<PaymentInquiry>,
+            ) {
 
                 res_payment_data.value = response.body()?.data
                 Log.w("response.body()", "" + response.body().toString())
@@ -213,13 +237,41 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
             }
 
 
-        })
+        })*/
     }
 
-    fun getQrCodeBitmap(paymentCode:String): Bitmap {
+    fun getPaymentInquiryRX ():io.reactivex.rxjava3.core.Observer<PaymentInquiry>{
+        return object :io.reactivex.rxjava3.core.Observer<PaymentInquiry>{
+            override fun onSubscribe(d: Disposable) {
+                if(res_payment.value?.data?.status.equals("processing"))
+                    d.dispose()
+                d
+            }
+
+            override fun onNext(t: PaymentInquiry) {
+                res_payment.postValue(t)
+                res_payment_data.setValue(t.data)
+                System.out.println(t.data.status)
+            }
+
+            override fun onError(e: Throwable) {
+                e.printStackTrace()
+            }
+
+            override fun onComplete() {
+                System.out.println("completed.")
+
+            }
+
+        }
+    }
+
+    fun getQrCodeBitmap(paymentCode: String): Bitmap {
         val size = 256 //pixels
         val qrCodeContent = "$paymentCode"
-        val hints = hashMapOf<EncodeHintType, Int>().also { it[EncodeHintType.MARGIN] = 1 } // Make the QR code buffer border narrower
+        val hints = hashMapOf<EncodeHintType, Int>().also {
+            it[EncodeHintType.MARGIN] = 1
+        } // Make the QR code buffer border narrower
         val bits = QRCodeWriter().encode(qrCodeContent, BarcodeFormat.QR_CODE, size, size)
         return Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565).also {
             for (x in 0 until size) {
@@ -231,10 +283,9 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
     }
 
 
-
     var Amount_Str = MutableLiveData<String>()
 
-    fun setClickBtn(binding: MainFragmentBinding){
+    fun setClickBtn(binding: MainFragmentBinding) {
         binding.button0.setOnClickListener(View.OnClickListener {
             val append = binding.button0
             AppendString(append, binding.textView3)
@@ -290,8 +341,8 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
         })
     }
 
-    fun AppendString(btn : Button,textAmount:TextView){
-        if(!(textAmount.text == "" && btn.text == "0")) {
+    fun AppendString(btn: Button, textAmount: TextView) {
+        if (!(textAmount.text == "" && btn.text == "0")) {
             var strAppend = btn.text.toString()
             var str = textAmount.text.toString()
             var value = (str + strAppend)
@@ -308,7 +359,7 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
         return Integer.valueOf(Amount_Str.value)
     }
 
-    fun ShowDialog(view: View,context: Context) {
+    fun ShowDialog(view: View, context: Context) {
         val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
         dialog.setCanceledOnTouchOutside(true)
         dialog.setOnCancelListener { it.dismiss() }
