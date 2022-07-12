@@ -2,6 +2,7 @@ package com.example.mockingmerchantapp.ModelClass
 
 import com.google.gson.annotations.Expose
 import com.google.gson.annotations.SerializedName
+import java.math.BigDecimal
 
 data class TransactionInquiry(
     @Expose
@@ -33,7 +34,7 @@ data class Transactions(
     val when_: String,
     @Expose
     @SerializedName("amount")
-    var amount: Int,
+    var amount: Double,
     @Expose
     @SerializedName("status")
     val status: String,

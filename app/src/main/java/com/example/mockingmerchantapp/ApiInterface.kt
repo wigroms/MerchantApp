@@ -25,12 +25,14 @@ interface ApiInterface {
     @POST("merchant/v1/waitforpayment")
     fun PaymentInquiry(@Body body:PaymentInquiryRequest): Observable<PaymentInquiry>
 
+    @POST("merchant/v1/paymentvoid")
+    fun VoidPayment(@Body body:VoidPaymentRequest): Observable<VoidPayment>
 
     object ApiClient {
 
         val apiInterface: ApiInterface
         private val retrofit: Retrofit
-        private val DEFAULT_TIMEOUT = 5L
+        private val DEFAULT_TIMEOUT = 20L
         private val okHttpClient: OkHttpClient
 
         init {
@@ -49,13 +51,15 @@ interface ApiInterface {
 
             okHttpClient = OkHttpClient.Builder()
                 .connectTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS)
+                .readTimeout(DEFAULT_TIMEOUT,TimeUnit.SECONDS)
                 .addInterceptor(longging)
                 .build()
 
             retrofit = Retrofit.Builder()
                 .addConverterFactory(GsonConverterFactory.create())
                 .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
-                .baseUrl("https://91151b51c56a4caabcea204b8837fe59.apig.ap-southeast-2.huaweicloudapis.com/caribbean/")
+              //  .baseUrl("https://91151b51c56a4caabcea204b8837fe59.apig.ap-southeast-2.huaweicloudapis.com/caribbean/") //TEST
+                .baseUrl(" https://e034f63bab9e4cdb9ae4026c0df96486.apig.ap-southeast-2.huaweicloudapis.com/caribbean/") //UAT
                 .client(okHttpClient)
                 .build()
             Log.w("retrofit",""+retrofit.baseUrl().uri())

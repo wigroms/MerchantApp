@@ -31,7 +31,6 @@ import java.util.*
 class QRFragment : Fragment() {
 
 
-
     private var timer: CountDownTimer? = null
     private var App: Int = 0
     private var AppSelected = "kexwallet"
@@ -71,7 +70,7 @@ class QRFragment : Fragment() {
         Log.d("AppSelected",""+AppSelected)
         var paymentsoruce = Payment_source(AppSelected)
         var invoice = Invoice("21 TST Tower", "คนไทย ใจดี")
-        var requester = CscanBRequest("511516" + currentDate, "M299",//5516627
+        var requester = CscanBRequest("511516" + currentDate,"M299",//5516627
             "1", "1", Amount, "Coke test 20 Baht",
             paymentsoruce, "Baht", "12316515665", "1", "BSS_vending", invoice)
 
@@ -94,8 +93,8 @@ class QRFragment : Fragment() {
             try {
                 binding.imageView2.setImageBitmap(viewModel.getQrCodeBitmap(it.payment_code))
 
-                var Paymentrequester = PaymentInquiryRequest("M299", "1", it.ref, 10)
-                Log.d("observe Payment", "onCreate: $Paymentrequester")
+                var Paymentrequester = PaymentInquiryRequest("M299", "1", it.ref, 20)//M292092
+                Log.d("observe Payment", "onCreateRequest: $Paymentrequester")
 
                viewModel.getStatusPayment(Paymentrequester)
 
@@ -165,7 +164,7 @@ class QRFragment : Fragment() {
         viewModel.res_payment_data.observe(viewLifecycleOwner, Observer {
             Log.d("observe payment", "onCreate: $it")
             try {
-                if (it.status.equals("success")) {
+                if (it.status.equals("success")) {//processing ,success
                     timer?.let {
                         //Work with non-null user
                         it.cancel()

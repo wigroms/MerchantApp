@@ -4,7 +4,10 @@ import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.util.Log
 import android.view.View
@@ -12,26 +15,36 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.annotation.NonNull
+import androidx.appcompat.view.menu.MenuView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.RecyclerView
+import com.example.mockingmerchantapp.DataAdapter
 import com.example.mockingmerchantapp.MainRepository
 import com.example.mockingmerchantapp.ModelClass.*
 import com.example.mockingmerchantapp.R
+import com.example.mockingmerchantapp.SwipeToDeleteCallback
 import com.example.mockingmerchantapp.databinding.MainFragmentBinding
+import com.google.android.material.snackbar.Snackbar
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.text.SimpleDateFormat
+import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.coroutineContext
 
 
 class MainViewModel constructor(private val repository: MainRepository) : ViewModel() {
@@ -146,9 +159,9 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
     var transactionInquiry = MutableLiveData<TransactionInquiry>()
     var transactionslist = MutableLiveData<List<Transactions>>()
 
-    fun getTransactionHistory() {
-
-        var tranRequest = TransactionRequest(date = "2022-06-10",payment_method = "kexwallet")
+    fun getTransactionHistory(currentDate: String) {
+        Log.w("currentDate", " " + currentDate)
+        var tranRequest = TransactionRequest(date = "$currentDate", "M299", "Success")//M292092
         val response = repository.getTransaction(tranRequest)
 
         response.enqueue(object : Callback<TransactionInquiry> {
@@ -157,26 +170,43 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
                 response: Response<TransactionInquiry>,
             ) {
                 transactionInquiry.postValue(response.body())
-                transactionslist.postValue(response.body()!!.data.transactions.sortedByDescending { it.when_ })
-                transactionslist.value = response.body()!!.data.transactions
+                transactionslist.postValue(response.body()!!.data.transactions.sortedByDescending { it.when_ }
+                    .filter { it.status.equals("success") })
+                transactionslist.value =
+                    response.body()!!.data.transactions.sortedByDescending { it.when_ }
+                        .filter { it.status.equals("success") }
                 // transactionInquiry.postValue(response.body())
-                Log.w("response.body()", "" + response.body().toString())
-                Log.w("transactionInquiry", "" + transactionInquiry.value?.data)
+                // Log.w("response.body()", "" + response.body().toString())
+                // Log.w("transactionInquiry", "" + transactionInquiry.value?.data)
                 Log.w("transactionList", "" + transactionslist.value)
 
             }
 
             override fun onFailure(call: Call<TransactionInquiry>, t: Throwable) {
                 //errorMessage.postValue(t.message)
-                Log.w("response.body()", "" + t.message)
+                t.printStackTrace()
+                Log.w("response.body() failure", "" + t.message)
             }
         })
 
     }
 
-    fun getTransactionTotalAmount(): Int? {
-        return transactionInquiry.value?.data?.transactions?.sumOf { it.amount }
+    fun getTransactionTotalAmount(): Double? {
+        return transactionslist.value?.sumOf { it.amount }//.filter { it.status.equals("success") }
     }
+
+    fun getVoidPayment(req: VoidPaymentRequest) {
+
+        var response = repository.getVoidPayment(req)
+        response.subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            //.repeat(5)
+            .timeout(30, TimeUnit.SECONDS)
+            .takeUntil { it.data.status.equals("success") }//processing
+            .subscribe(getVoidPaymentRX())
+
+    }
+
 
     var res_cscanb = MutableLiveData<CscanB>()
     var res_cscanb_data = MutableLiveData<CSCANB_Data>()
@@ -205,21 +235,21 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
     var res_payment = MutableLiveData<PaymentInquiry>()
     var res_payment_data = MutableLiveData<Data>()
 
-    fun getStatusPayment(req: PaymentInquiryRequest){
+    fun getStatusPayment(req: PaymentInquiryRequest) {
 
         var response = repository.getStatusPayment(req)
-       response.subscribeOn(Schedulers.io())
-           .observeOn(AndroidSchedulers.mainThread())
-           //.repeat(10000)
-           .timeout(20,TimeUnit.SECONDS)
-           .takeUntil{it.data.status.equals("success")}//processing
-           .subscribe(getPaymentInquiryRX())
+        response.subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            //.repeat(5)
+            .timeout(30, TimeUnit.SECONDS)
+            .takeUntil { it.data.status.equals("success") }//processing
+            .subscribe(getPaymentInquiryRX())
 
-         /*    var Intervaltime : Observable<Long> =  Observable.interval(5, TimeUnit.SECONDS)
-        Intervaltime.subscribe { it ->
-            System.out.println("Interval 5 = $it")
+        /*    var Intervaltime : Observable<Long> =  Observable.interval(5, TimeUnit.SECONDS)
+       Intervaltime.subscribe { it ->
+           System.out.println("Interval 5 = $it")
 
-        }*/
+       }*/
 
         /*response.enqueue(object : Callback<PaymentInquiry> {
             override fun onResponse(
@@ -240,10 +270,10 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
         })*/
     }
 
-    fun getPaymentInquiryRX ():io.reactivex.rxjava3.core.Observer<PaymentInquiry>{
-        return object :io.reactivex.rxjava3.core.Observer<PaymentInquiry>{
+    fun getPaymentInquiryRX(): io.reactivex.rxjava3.core.Observer<PaymentInquiry> {
+        return object : io.reactivex.rxjava3.core.Observer<PaymentInquiry> {
             override fun onSubscribe(d: Disposable) {
-                if(res_payment.value?.data?.status.equals("processing"))
+                if (res_payment.value?.data?.status.equals("processing"))
                     d.dispose()
                 d
             }
@@ -252,6 +282,32 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
                 res_payment.postValue(t)
                 res_payment_data.setValue(t.data)
                 System.out.println(t.data.status)
+            }
+
+            override fun onError(e: Throwable) {
+                e.printStackTrace()
+            }
+
+            override fun onComplete() {
+                System.out.println("completed.")
+
+            }
+
+        }
+    }
+
+    var res_void_payment = MutableLiveData<VoidPayment>()
+    var res_void_payment_data = MutableLiveData<VoidData>()
+
+    fun getVoidPaymentRX(): io.reactivex.rxjava3.core.Observer<VoidPayment> {
+        return object : io.reactivex.rxjava3.core.Observer<VoidPayment> {
+            override fun onSubscribe(d: Disposable) {
+            }
+
+            override fun onNext(t: VoidPayment) {
+                res_void_payment.postValue(t)
+                res_void_payment_data.setValue(t.data)
+                System.out.println(t.data)
             }
 
             override fun onError(e: Throwable) {
@@ -381,5 +437,9 @@ class MainViewModel constructor(private val repository: MainRepository) : ViewMo
 
         handler.postDelayed(runnable, 5000)
     }
+
+
+
+
 
 }
