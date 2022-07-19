@@ -127,7 +127,8 @@ class DataAdapter(private val mList: List<Transactions>) :
                         viewModel.getVoidPayment(requestVoid)
 
                         DeleteItem(position)
-                        notifyItemRemoved(position)
+                        notifyItemChanged(position)
+                       // notifyItemRemoved(position)
                        // viewModel.getTransactionHistory(currentDate)
 
                 }
